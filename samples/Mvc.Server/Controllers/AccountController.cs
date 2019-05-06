@@ -1,8 +1,6 @@
 ﻿using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AspNet.Security.OAuth.Validation;
-using AspNet.Security.OpenIdConnect.Primitives;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,12 +8,12 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Mvc.Server.Models;
 using Mvc.Server.Services;
 using Mvc.Server.ViewModels.Account;
-using Newtonsoft.Json.Linq;
-using OpenIddict.Core;
 
-namespace Mvc.Server.Controllers {
+namespace Mvc.Server.Controllers
+{
     [Authorize]
-    public class AccountController : Controller {
+    public class AccountController : Controller
+    {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
@@ -28,7 +26,8 @@ namespace Mvc.Server.Controllers {
             SignInManager<ApplicationUser> signInManager,
             IEmailSender emailSender,
             ISmsSender smsSender,
-            ApplicationDbContext applicationDbContext) {
+            ApplicationDbContext applicationDbContext)
+        {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
@@ -37,48 +36,11 @@ namespace Mvc.Server.Controllers {
         }
 
         //
-        // GET: /Account/Userinfo
-        [Authorize(ActiveAuthenticationSchemes = OAuthValidationDefaults.AuthenticationScheme)]
-        [HttpGet, Produces("application/json")]
-        public async Task<IActionResult> Userinfo() {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) {
-                return BadRequest(new OpenIdConnectResponse {
-                    Error = OpenIdConnectConstants.Errors.InvalidGrant,
-                    ErrorDescription = "The user profile is no longer available."
-                });
-            }
-
-            var claims = new JObject();
-
-            // Note: the "sub" claim is a mandatory claim and must be included in the JSON response.
-            claims[OpenIdConnectConstants.Claims.Subject] = user.Id.ToString();
-
-            if (User.HasClaim(OpenIdConnectConstants.Claims.Scope, OpenIdConnectConstants.Scopes.Email)) {
-                claims[OpenIdConnectConstants.Claims.Email] = user.Email;
-                claims[OpenIdConnectConstants.Claims.EmailVerified] = user.EmailConfirmed;
-            }
-
-            if (User.HasClaim(OpenIdConnectConstants.Claims.Scope, OpenIdConnectConstants.Scopes.Phone)) {
-                claims[OpenIdConnectConstants.Claims.PhoneNumber] = user.PhoneNumber;
-                claims[OpenIdConnectConstants.Claims.PhoneNumberVerified] = user.PhoneNumberConfirmed;
-            }
-
-            if (User.HasClaim(OpenIdConnectConstants.Claims.Scope, OpenIddictConstants.Scopes.Roles)) {
-                claims[OpenIddictConstants.Claims.Roles] = JArray.FromObject(await _userManager.GetRolesAsync(user));
-            }
-
-            // Note: the complete list of standard claims supported by the OpenID Connect specification
-            // can be found here: http://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
-
-            return Json(claims);
-        }
-
-        //
         // GET: /Account/Login
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login(string returnUrl = null) {
+        public IActionResult Login(string returnUrl = null)
+        {
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
@@ -88,23 +50,29 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null) {
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        {
             EnsureDatabaseCreated(_applicationDbContext);
             ViewData["ReturnUrl"] = returnUrl;
-            if (ModelState.IsValid) {
+            if (ModelState.IsValid)
+            {
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
-                if (result.Succeeded) {
+                if (result.Succeeded)
+                {
                     return RedirectToLocal(returnUrl);
                 }
-                if (result.RequiresTwoFactor) {
+                if (result.RequiresTwoFactor)
+                {
                     return RedirectToAction(nameof(SendCode), new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
                 }
-                if (result.IsLockedOut) {
+                if (result.IsLockedOut)
+                {
                     return View("Lockout");
                 }
-                else {
+                else
+                {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                     return View(model);
                 }
@@ -118,7 +86,8 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/Register
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Register(string returnUrl = null) {
+        public IActionResult Register(string returnUrl = null)
+        {
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
@@ -128,13 +97,16 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null) {
+        public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
+        {
             EnsureDatabaseCreated(_applicationDbContext);
             ViewData["ReturnUrl"] = returnUrl;
-            if (ModelState.IsValid) {
+            if (ModelState.IsValid)
+            {
                 var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
                 var result = await _userManager.CreateAsync(user, model.Password);
-                if (result.Succeeded) {
+                if (result.Succeeded)
+                {
                     // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=532713
                     // Send an email with this link
                     //var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -155,7 +127,8 @@ namespace Mvc.Server.Controllers {
         // POST: /Account/LogOff
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> LogOff() {
+        public async Task<IActionResult> LogOff()
+        {
             await _signInManager.SignOutAsync();
             return RedirectToAction(nameof(HomeController.Index), "Home");
         }
@@ -165,7 +138,8 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public IActionResult ExternalLogin(string provider, string returnUrl = null) {
+        public IActionResult ExternalLogin(string provider, string returnUrl = null)
+        {
             EnsureDatabaseCreated(_applicationDbContext);
             // Request a redirect to the external login provider.
             var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { ReturnUrl = returnUrl });
@@ -177,24 +151,30 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ExternalLoginCallback
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null) {
+        public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null)
+        {
             var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null) {
+            if (info == null)
+            {
                 return RedirectToAction(nameof(Login));
             }
 
             // Sign in the user with this external login provider if the user already has a login.
             var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
-            if (result.Succeeded) {
+            if (result.Succeeded)
+            {
                 return RedirectToLocal(returnUrl);
             }
-            if (result.RequiresTwoFactor) {
+            if (result.RequiresTwoFactor)
+            {
                 return RedirectToAction(nameof(SendCode), new { ReturnUrl = returnUrl });
             }
-            if (result.IsLockedOut) {
+            if (result.IsLockedOut)
+            {
                 return View("Lockout");
             }
-            else {
+            else
+            {
                 // If the user does not have an account, then ask the user to create an account.
                 ViewData["ReturnUrl"] = returnUrl;
                 ViewData["LoginProvider"] = info.LoginProvider;
@@ -208,18 +188,23 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationViewModel model, string returnUrl = null) {
-            if (ModelState.IsValid) {
+        public async Task<IActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationViewModel model, string returnUrl = null)
+        {
+            if (ModelState.IsValid)
+            {
                 // Get the information about the user from the external login provider
                 var info = await _signInManager.GetExternalLoginInfoAsync();
-                if (info == null) {
+                if (info == null)
+                {
                     return View("ExternalLoginFailure");
                 }
                 var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
                 var result = await _userManager.CreateAsync(user);
-                if (result.Succeeded) {
+                if (result.Succeeded)
+                {
                     result = await _userManager.AddLoginAsync(user, info);
-                    if (result.Succeeded) {
+                    if (result.Succeeded)
+                    {
                         await _signInManager.SignInAsync(user, isPersistent: false);
                         return RedirectToLocal(returnUrl);
                     }
@@ -234,12 +219,15 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ConfirmEmail
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail(string userId, string code) {
-            if (userId == null || code == null) {
+        public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
                 return View("Error");
             }
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) {
+            if (user == null)
+            {
                 return View("Error");
             }
             var result = await _userManager.ConfirmEmailAsync(user, code);
@@ -250,7 +238,8 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ForgotPassword
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ForgotPassword() {
+        public IActionResult ForgotPassword()
+        {
             return View();
         }
 
@@ -259,10 +248,13 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model) {
-            if (ModelState.IsValid) {
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
                 var user = await _userManager.FindByNameAsync(model.Email);
-                if (user == null || !(await _userManager.IsEmailConfirmedAsync(user))) {
+                if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+                {
                     // Don't reveal that the user does not exist or is not confirmed
                     return View("ForgotPasswordConfirmation");
                 }
@@ -284,7 +276,8 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ForgotPasswordConfirmation
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ForgotPasswordConfirmation() {
+        public IActionResult ForgotPasswordConfirmation()
+        {
             return View();
         }
 
@@ -292,7 +285,8 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ResetPassword
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ResetPassword(string code = null) {
+        public IActionResult ResetPassword(string code = null)
+        {
             return code == null ? View("Error") : View();
         }
 
@@ -301,17 +295,21 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model) {
-            if (!ModelState.IsValid) {
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
                 return View(model);
             }
             var user = await _userManager.FindByNameAsync(model.Email);
-            if (user == null) {
+            if (user == null)
+            {
                 // Don't reveal that the user does not exist
                 return RedirectToAction(nameof(AccountController.ResetPasswordConfirmation), "Account");
             }
             var result = await _userManager.ResetPasswordAsync(user, model.Code, model.Password);
-            if (result.Succeeded) {
+            if (result.Succeeded)
+            {
                 return RedirectToAction(nameof(AccountController.ResetPasswordConfirmation), "Account");
             }
             AddErrors(result);
@@ -322,7 +320,8 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/ResetPasswordConfirmation
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ResetPasswordConfirmation() {
+        public IActionResult ResetPasswordConfirmation()
+        {
             return View();
         }
 
@@ -330,9 +329,11 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/SendCode
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult> SendCode(string returnUrl = null, bool rememberMe = false) {
+        public async Task<ActionResult> SendCode(string returnUrl = null, bool rememberMe = false)
+        {
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-            if (user == null) {
+            if (user == null)
+            {
                 return View("Error");
             }
             var userFactors = await _userManager.GetValidTwoFactorProvidersAsync(user);
@@ -345,27 +346,33 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendCode(SendCodeViewModel model) {
-            if (!ModelState.IsValid) {
+        public async Task<IActionResult> SendCode(SendCodeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
                 return View();
             }
 
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-            if (user == null) {
+            if (user == null)
+            {
                 return View("Error");
             }
 
             // Generate the token and send it
             var code = await _userManager.GenerateTwoFactorTokenAsync(user, model.SelectedProvider);
-            if (string.IsNullOrWhiteSpace(code)) {
+            if (string.IsNullOrWhiteSpace(code))
+            {
                 return View("Error");
             }
 
             var message = "Your security code is: " + code;
-            if (model.SelectedProvider == "Email") {
+            if (model.SelectedProvider == "Email")
+            {
                 await _emailSender.SendEmailAsync(await _userManager.GetEmailAsync(user), "Security Code", message);
             }
-            else if (model.SelectedProvider == "Phone") {
+            else if (model.SelectedProvider == "Phone")
+            {
                 await _smsSender.SendSmsAsync(await _userManager.GetPhoneNumberAsync(user), message);
             }
 
@@ -376,10 +383,12 @@ namespace Mvc.Server.Controllers {
         // GET: /Account/VerifyCode
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> VerifyCode(string provider, bool rememberMe, string returnUrl = null) {
+        public async Task<IActionResult> VerifyCode(string provider, bool rememberMe, string returnUrl = null)
+        {
             // Require that the user has already logged in via username/password or external login
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
-            if (user == null) {
+            if (user == null)
+            {
                 return View("Error");
             }
             return View(new VerifyCodeViewModel { Provider = provider, ReturnUrl = returnUrl, RememberMe = rememberMe });
@@ -390,8 +399,10 @@ namespace Mvc.Server.Controllers {
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyCode(VerifyCodeViewModel model) {
-            if (!ModelState.IsValid) {
+        public async Task<IActionResult> VerifyCode(VerifyCodeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
                 return View(model);
             }
 
@@ -399,13 +410,16 @@ namespace Mvc.Server.Controllers {
             // If a user enters incorrect codes for a specified amount of time then the user account
             // will be locked out for a specified amount of time.
             var result = await _signInManager.TwoFactorSignInAsync(model.Provider, model.Code, model.RememberMe, model.RememberBrowser);
-            if (result.Succeeded) {
+            if (result.Succeeded)
+            {
                 return RedirectToLocal(model.ReturnUrl);
             }
-            if (result.IsLockedOut) {
+            if (result.IsLockedOut)
+            {
                 return View("Lockout");
             }
-            else {
+            else
+            {
                 ModelState.AddModelError("", "Invalid code.");
                 return View(model);
             }
@@ -418,28 +432,36 @@ namespace Mvc.Server.Controllers {
         // not yet supported in this release.
         // Please see this http://go.microsoft.com/fwlink/?LinkID=615859 for more information on how to do deploy the database
         // when publishing your application.
-        private static void EnsureDatabaseCreated(ApplicationDbContext context) {
-            if (!_databaseChecked) {
+        private static void EnsureDatabaseCreated(ApplicationDbContext context)
+        {
+            if (!_databaseChecked)
+            {
                 _databaseChecked = true;
                 context.Database.EnsureCreated();
             }
         }
 
-        private void AddErrors(IdentityResult result) {
-            foreach (var error in result.Errors) {
+        private void AddErrors(IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
                 ModelState.AddModelError(string.Empty, error.Description);
             }
         }
 
-        private async Task<ApplicationUser> GetCurrentUserAsync() {
+        private async Task<ApplicationUser> GetCurrentUserAsync()
+        {
             return await _userManager.GetUserAsync(User);
         }
 
-        private IActionResult RedirectToLocal(string returnUrl) {
-            if (Url.IsLocalUrl(returnUrl)) {
+        private IActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
                 return Redirect(returnUrl);
             }
-            else {
+            else
+            {
                 return RedirectToAction(nameof(HomeController.Index), "Home");
             }
         }

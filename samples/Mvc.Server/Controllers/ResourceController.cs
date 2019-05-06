@@ -1,24 +1,29 @@
 ﻿using System.Threading.Tasks;
-using AspNet.Security.OAuth.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Mvc.Server.Models;
+using OpenIddict.Validation;
 
-namespace Mvc.Server.Controllers {
+namespace Mvc.Server.Controllers
+{
     [Route("api")]
-    public class ResourceController : Controller {
+    public class ResourceController : Controller
+    {
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public ResourceController(UserManager<ApplicationUser> userManager) {
+        public ResourceController(UserManager<ApplicationUser> userManager)
+        {
             _userManager = userManager;
         }
 
-        [Authorize(ActiveAuthenticationSchemes = OAuthValidationDefaults.AuthenticationScheme)]
+        [Authorize(AuthenticationSchemes = OpenIddictValidationDefaults.AuthenticationScheme)]
         [HttpGet("message")]
-        public async Task<IActionResult> GetMessage() {
+        public async Task<IActionResult> GetMessage()
+        {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) {
+            if (user == null)
+            {
                 return BadRequest();
             }
 

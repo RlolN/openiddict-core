@@ -4,17 +4,19 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/46ofo2eusje0hcw2?svg=true)](https://ci.appveyor.com/project/openiddict/openiddict-core)
 [![Build status](https://travis-ci.org/openiddict/openiddict-core.svg)](https://travis-ci.org/openiddict/openiddict-core)
 
-
 ### What's OpenIddict?
 
-OpenIddict aims at providing a **simple and easy-to-use solution** to implement an **OpenID Connect server in any ASP.NET Core application**.
+OpenIddict aims at providing a **simple and easy-to-use solution** to implement an **OpenID Connect server in any ASP.NET Core 1.x or 2.x application**.
 
 OpenIddict is based on
 **[AspNet.Security.OpenIdConnect.Server (codenamed ASOS)](https://github.com/aspnet-contrib/AspNet.Security.OpenIdConnect.Server)** to control the OpenID Connect authentication flow and can be used with any membership stack, **including [ASP.NET Core Identity](https://github.com/aspnet/Identity)**.
 
 OpenIddict fully supports the **[code/implicit/hybrid flows](http://openid.net/specs/openid-connect-core-1_0.html)** and the **[client credentials/resource owner password grants](https://tools.ietf.org/html/rfc6749)**. You can also create your own custom grant types.
 
-Note: OpenIddict uses **[Entity Framework Core](https://github.com/aspnet/EntityFramework)** by default, but you can also provide your own store.
+Note: OpenIddict natively supports **[Entity Framework Core](https://www.nuget.org/packages/OpenIddict.EntityFrameworkCore)**, **[Entity Framework 6](https://www.nuget.org/packages/OpenIddict.EntityFramework)** and **[MongoDB](https://www.nuget.org/packages/OpenIddict.MongoDb)** out-of-the-box, but you can also provide your own stores.
+
+> Note: **the OpenIddict 2.x packages are only compatible with ASP.NET Core 2.x**.
+> If your application targets ASP.NET Core 1.x, use the OpenIddict 1.x packages.
 
 ### Why an OpenID Connect server?
 
@@ -23,15 +25,25 @@ It also allows you to manage all your users using local password or an external 
 (e.g. Facebook or Google) for all your applications in one central place,
 with the power to control who can access your API and the information that is exposed to each client.
 
+## Documentation
+
+**The documentation can be found in the [dedicated repository](https://openiddict.github.io/openiddict-documentation)**.
+
 ## Samples
 
 **[Specialized samples can be found in the samples repository](https://github.com/openiddict/openiddict-samples):**
 
-  - [Authorization code flow sample](https://github.com/openiddict/openiddict-samples/tree/master/samples/CodeFlow)
-  - [Implicit flow sample](https://github.com/openiddict/openiddict-samples/tree/master/samples/ImplicitFlow)
-  - [Password flow sample](https://github.com/openiddict/openiddict-samples/tree/master/samples/PasswordFlow)
-  - [Client credentials flow sample](https://github.com/openiddict/openiddict-samples/tree/master/samples/ClientCredentialsFlow)
-  - [Refresh flow sample](https://github.com/openiddict/openiddict-samples/tree/master/samples/RefreshFlow)
+  - [Authorization code flow sample](https://github.com/openiddict/openiddict-samples/tree/dev/samples/CodeFlow)
+  - [Implicit flow sample](https://github.com/openiddict/openiddict-samples/tree/dev/samples/ImplicitFlow)
+  - [Password flow sample](https://github.com/openiddict/openiddict-samples/tree/dev/samples/PasswordFlow)
+  - [Client credentials flow sample](https://github.com/openiddict/openiddict-samples/tree/dev/samples/ClientCredentialsFlow)
+  - [Refresh flow sample](https://github.com/openiddict/openiddict-samples/tree/dev/samples/RefreshFlow)
+
+> **Samples for ASP.NET Core 1.x can be found [in the master branch of the samples repository](https://github.com/openiddict/openiddict-samples/tree/master)**.
+
+## Migrating to OpenIddict RC3?
+
+**Before updating your application, read [the migration guide](https://openiddict.github.io/openiddict-documentation/guide/migration.html)**.
 
 --------------
 
@@ -39,40 +51,26 @@ with the power to control who can access your API and the information that is ex
 
 To use OpenIddict, you need to:
 
-  - **Install the latest [.NET Core tooling](https://www.microsoft.com/net/download) and update your packages to reference the ASP.NET Core RTM packages**.
+  - **Install the latest [.NET Core 2.x tooling](https://www.microsoft.com/net/download) and update your packages to reference the ASP.NET Core 2.x packages**.
 
   - **Have an existing project or create a new one**: when creating a new project using Visual Studio's default ASP.NET Core template, using **individual user accounts authentication** is strongly recommended. When updating an existing project, you must provide your own `AccountController` to handle the registration process and the authentication flow.
 
-  - **Add the appropriate MyGet repositories to your NuGet sources**. This can be done by adding a new `NuGet.Config` file at the root of your solution:
+  - **Update your `.csproj` file** to reference the `OpenIddict` packages:
 
 ```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="NuGet" value="https://api.nuget.org/v3/index.json" />
-    <add key="aspnet-contrib" value="https://www.myget.org/F/aspnet-contrib/api/v3/index.json" />
-  </packageSources>
-</configuration>
-```
-
-  - **Update your `project.json`** to reference `AspNet.Security.OAuth.Validation` and `OpenIddict`:
-
-```json
-"dependencies": {
-  "AspNet.Security.OAuth.Validation": "1.0.0-alpha2-final",
-  "OpenIddict": "1.0.0-*",
-  "OpenIddict.EntityFrameworkCore": "1.0.0-*",
-  "OpenIddict.Mvc": "1.0.0-*"
-}
+<PackageReference Include="OpenIddict" Version="2.0.0-rc3-final" />
+<PackageReference Include="OpenIddict.EntityFrameworkCore" Version="2.0.0-rc3-final" />
 ```
 
   - **Configure the OpenIddict services** in `Startup.ConfigureServices`:
 
 ```csharp
-public void ConfigureServices(IServiceCollection services) {
+public void ConfigureServices(IServiceCollection services)
+{
     services.AddMvc();
 
-    services.AddDbContext<ApplicationDbContext>(options => {
+    services.AddDbContext<ApplicationDbContext>(options =>
+    {
         // Configure the context to use Microsoft SQL Server.
         options.UseSqlServer(configuration["Data:DefaultConnection:ConnectionString"]);
 
@@ -83,33 +81,40 @@ public void ConfigureServices(IServiceCollection services) {
     });
 
     // Register the Identity services.
-	services.AddIdentity<ApplicationUser, IdentityRole>()
-	    .AddEntityFrameworkCoreStores<ApplicationDbContext>()
-	    .AddDefaultTokenProviders();
+    services.AddIdentity<ApplicationUser, IdentityRole>()
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddDefaultTokenProviders();
 
-	// Register the OpenIddict services.
-	services.AddOpenIddict()
-        // Register the Entity Framework stores.
-        .AddEntityFrameworkCoreStores<ApplicationDbContext>()
+    // Register the OpenIddict services.
+    services.AddOpenIddict()
+        .AddCore(options =>
+        {
+            // Configure OpenIddict to use the Entity Framework Core stores and entities.
+            options.UseEntityFrameworkCore()
+                   .UseDbContext<ApplicationDbContext>();
+        })
 
-        // Register the ASP.NET Core MVC binder used by OpenIddict.
-        // Note: if you don't call this method, you won't be able to
-        // bind OpenIdConnectRequest or OpenIdConnectResponse parameters.
-        .AddMvcBinders()
+        .AddServer(options =>
+        {
+            // Register the ASP.NET Core MVC binder used by OpenIddict.
+            // Note: if you don't call this method, you won't be able to
+            // bind OpenIdConnectRequest or OpenIdConnectResponse parameters.
+            options.UseMvc();
 
-        // Enable the token endpoint (required to use the password flow).
-        .EnableTokenEndpoint("/connect/token")
+            // Enable the token endpoint (required to use the password flow).
+            options.EnableTokenEndpoint("/connect/token");
 
-        // Allow client applications to use the grant_type=password flow.
-        .AllowPasswordFlow()
+            // Allow client applications to use the grant_type=password flow.
+            options.AllowPasswordFlow();
 
-	    // During development, you can disable the HTTPS requirement.
-	    .DisableHttpsRequirement()
+            // During development, you can disable the HTTPS requirement.
+            options.DisableHttpsRequirement();
 
-        // Register a new ephemeral key, that is discarded when the application
-        // shuts down. Tokens signed using this key are automatically invalidated.
-        // This method should only be used during development.
-        .AddEphemeralSigningKey();
+            // Accept token requests that don't specify a client_id.
+            options.AcceptAnonymousClients();
+        })
+
+        .AddValidation();
 }
 ```
 
@@ -117,26 +122,22 @@ public void ConfigureServices(IServiceCollection services) {
 [Configuration and options](https://github.com/openiddict/core/wiki/Configuration-and-options)
 in the project wiki.
 
-  - **Add OpenIddict and the OAuth2 token validation middleware in your ASP.NET Core pipeline** by calling `app.UseOAuthValidation()` and `app.UseOpenIddict()` after `app.UseIdentity()` and before `app.UseMvc()`:
+  - **Make sure the authentication middleware is registered before all the other middleware, including `app.UseMvc()`**:
 
 ```csharp
-public void Configure(IApplicationBuilder app) {
-    app.UseIdentity();
-
-    app.UseOAuthValidation();
-
-    app.UseOpenIddict();
+public void Configure(IApplicationBuilder app)
+{
+    app.UseAuthentication();
 
     app.UseMvc();
 }
 ```
 
-> **Note:** `UseOpenIddict()` must be registered ***after*** `app.UseIdentity()` and the external social providers.
-
-  - **Update your Entity Framework context registration to register the OpenIddict entities**:
+  - **Update your Entity Framework Core context registration to register the OpenIddict entities**:
 
 ```csharp
-services.AddDbContext<ApplicationDbContext>(options => {
+services.AddDbContext<ApplicationDbContext>(options =>
+{
     // Configure the context to use Microsoft SQL Server.
     options.UseSqlServer(configuration["Data:DefaultConnection:ConnectionString"]);
 
@@ -147,14 +148,21 @@ services.AddDbContext<ApplicationDbContext>(options => {
 });
 ```
 
-> **Note:** if you change the default entity primary key (e.g. to `int` or `Guid` instead of `string`), make sure to use the `services.AddOpenIddict()` extension accepting a `TKey` generic argument and use the generic `options.UseOpenIddict<TKey>()` overload:
+> **Note:** if you change the default entity primary key (e.g. to `int` or `Guid` instead of `string`), make sure you use the `options.ReplaceDefaultEntities<TKey>()` core extension accepting a `TKey` generic argument and use the generic `options.UseOpenIddict<TKey>()` overload to configure Entity Framework Core to use the specified key type:
 
 
 ```csharp
-services.AddOpenIddict<Guid>()
-    .AddEntityFrameworkCoreStores<ApplicationDbContext>()
+services.AddOpenIddict()
+    .AddCore(options =>
+    {
+        // Configure OpenIddict to use the default entities with a custom key type.
+        options.UseEntityFrameworkCore()
+               .UseDbContext<ApplicationDbContext>()
+               .ReplaceDefaultEntities<Guid>();
+    });
 
-services.AddDbContext<ApplicationDbContext>(options => {
+services.AddDbContext<ApplicationDbContext>(options =>
+{
     // Configure the context to use Microsoft SQL Server.
     options.UseSqlServer(configuration["Data:DefaultConnection:ConnectionString"]);
 
@@ -172,64 +180,61 @@ The **Mvc.Server sample comes with an [`AuthorizationController` that supports b
   - **Enable the corresponding flows in the OpenIddict options**:
 
 ```csharp
-public void ConfigureServices(IServiceCollection services) {
-	// Register the OpenIddict services.
-	services.AddOpenIddict()
-        // Register the Entity Framework stores.
-        .AddEntityFrameworkCoreStores<ApplicationDbContext>()
+public void ConfigureServices(IServiceCollection services)
+{
+    // Register the OpenIddict services.
+    services.AddOpenIddict()
+        .AddCore(options =>
+        {
+            // Configure OpenIddict to use the Entity Framework Core stores and entities.
+            options.UseEntityFrameworkCore()
+                   .UseDbContext<ApplicationDbContext>();
+        })
 
-        // Register the ASP.NET Core MVC binder used by OpenIddict.
-        // Note: if you don't call this method, you won't be able to
-        // bind OpenIdConnectRequest or OpenIdConnectResponse parameters.
-        .AddMvcBinders()
+        .AddServer(options =>
+        {
+            // Register the ASP.NET Core MVC binder used by OpenIddict.
+            // Note: if you don't call this method, you won't be able to
+            // bind OpenIdConnectRequest or OpenIdConnectResponse parameters.
+            options.UseMvc();
 
-        // Enable the authorization and token endpoints (required to use the code flow).
-        .EnableAuthorizationEndpoint("/connect/authorize")
-        .EnableTokenEndpoint("/connect/token")
+            // Enable the authorization and token endpoints (required to use the code flow).
+            options.EnableAuthorizationEndpoint("/connect/authorize")
+                   .EnableTokenEndpoint("/connect/token");
 
-        // Allow client applications to use the code flow.
-        .AllowAuthorizationCodeFlow()
+            // Allow client applications to use the code flow.
+            options.AllowAuthorizationCodeFlow();
 
-	    // During development, you can disable the HTTPS requirement.
-	    .DisableHttpsRequirement()
+            // During development, you can disable the HTTPS requirement.
+            options.DisableHttpsRequirement();
+        })
 
-        // Register a new ephemeral key, that is discarded when the application
-        // shuts down. Tokens signed using this key are automatically invalidated.
-        // This method should only be used during development.
-        .AddEphemeralSigningKey();
+        .AddValidation();
 }
 ```
 
   - **Register your client application**:
 
 ```csharp
-using (var context = new ApplicationDbContext(
-    app.ApplicationServices.GetRequiredService<DbContextOptions<ApplicationDbContext>>())) {
-    context.Database.EnsureCreated();
+// Create a new service scope to ensure the database context is correctly disposed when this methods returns.
+using (var scope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await context.Database.EnsureCreatedAsync();
 
-    var applications = context.Set<OpenIddictApplication>();
+    // Note: when using a custom entity or a custom key type, replace OpenIddictApplication by the appropriate type.
+    var manager = scope.ServiceProvider.GetRequiredService<OpenIddictApplicationManager<OpenIddictApplication>>();
 
-    if (!applications.Any()) {
-        applications.Add(new OpenIddictApplication {
-            // Assign a unique identifier to your client app:
-            Id = "48BF1BC3-CE01-4787-BBF2-0426EAD21342",
+    if (await manager.FindByClientIdAsync("[client identifier]", cancellationToken) == null)
+    {
+        var descriptor = new OpenIddictApplicationDescriptor
+        {
+            ClientId = "[client identifier]",
+            ClientSecret = "[client secret]",
+            RedirectUris = { new Uri("[redirect uri]") }
+        };
 
-            // Assign a display named used in the consent form page:
-            DisplayName = "MVC Core client application",
-
-            // Register the appropriate redirect_uri and post_logout_redirect_uri:
-            RedirectUri = "http://localhost:53507/signin-oidc",
-            LogoutRedirectUri = "http://localhost:53507/",
-
-            // Generate a new derived key from the client secret:
-            Secret = Crypto.HashPassword("secret_secret_secret"),
-
-            // Note: use "public" for JS/mobile/desktop applications
-            // and "confidential" for server-side applications.
-            Type = OpenIddictConstants.ClientTypes.Confidential
-        });
-
-        context.SaveChanges();
+        await manager.CreateAsync(descriptor, cancellationToken);
     }
 }
 ```
@@ -244,6 +249,7 @@ using (var context = new ApplicationDbContext(
 - **[Creating your own OpenID Connect server with ASOS](http://kevinchalet.com/2016/07/13/creating-your-own-openid-connect-server-with-asos-introduction/)** by [Kévin Chalet](https://github.com/PinpointTownes)
 - **[Bearer Token Authentication in ASP.NET Core](https://blogs.msdn.microsoft.com/webdev/2016/10/27/bearer-token-authentication-in-asp-net-core/)** by [Mike Rousos](https://github.com/mjrousos) (for the Microsoft .NET Web Development and Tools blog)
 - **[ASP.NET Core and Angular 2](https://www.amazon.com/ASP-NET-Core-Angular-Valerio-Sanctis-ebook/dp/B01DZQHCVU/)** by [Valerio De Sanctis](https://github.com/Darkseal)
+- **[Implementing simple token authentication in ASP.NET Core with OpenIddict](http://kevinchalet.com/2017/01/30/implementing-simple-token-authentication-in-aspnet-core-with-openiddict/)** by [Kévin Chalet](https://github.com/PinpointTownes)
 
 ## Support
 
